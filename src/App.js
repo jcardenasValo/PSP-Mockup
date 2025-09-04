@@ -33,12 +33,11 @@ function App() {
 
   // Opciones por rol
   const bancoMenu = [
-    { text: 'Dashboard', icon: <Dashboard />, path: '/' },
+    { text: 'Inicio', icon: <DashboardIcon />, path: '/' },
     { text: 'Recaudador', icon: <AccountBalanceIcon />, path: '/recaudador' },
     { text: 'Cuentas CBU', icon: <MonetizationOnIcon />, path: '/cuentas-cbu' },
   ];
   const recaudadoraMenu = [
-    { text: 'Dashboard', icon: <Dashboard />, path: '/' },
     { text: 'Clientes', icon: <PeopleIcon />, path: '/clientes-recaudadora' },
     { text: 'Cajas/Sucursales Clientes', icon: <StoreIcon />, path: '/cajas-clientes' },
     { text: 'Cuenta CVU', icon: <MonetizationOnIcon />, path: '/cuenta-cvu' },
@@ -50,20 +49,20 @@ function App() {
   // Paleta inspirada en National Geographic
   const natgeoPalette = {
     primary: {
-      main: '#E1C16E', // amarillo dorado
-      contrastText: '#222'
+      main: darkMode ? '#E1C16E' : '#B71C1C', // rojo en claro, dorado en oscuro
+      contrastText: darkMode ? '#222' : '#fff'
     },
     secondary: {
-      main: '#00796B', // verde profundo
-      contrastText: '#fff'
+      main: darkMode ? '#00796B' : '#fff', // blanco en claro, verde en oscuro
+      contrastText: darkMode ? '#fff' : '#B71C1C'
     },
     background: {
-      default: darkMode ? '#222' : '#F5F3E7', // beige claro o fondo oscuro
-      paper: darkMode ? '#333' : '#FFF8E1',
+      default: darkMode ? '#222' : '#fff', // blanco en claro, fondo oscuro en oscuro
+      paper: darkMode ? '#333' : '#fff',
     },
     text: {
-      primary: darkMode ? '#F5F3E7' : '#222',
-      secondary: darkMode ? '#E1C16E' : '#00796B',
+      primary: darkMode ? '#F5F3E7' : '#B71C1C', // rojo en claro
+      secondary: darkMode ? '#E1C16E' : '#B71C1C',
     },
     error: {
       main: '#B71C1C',
@@ -99,9 +98,9 @@ function App() {
                 </IconButton>
               </Toolbar>
               <Routes>
-                <Route path="/" element={<Dashboard />} />
                 {role === 'banco' && (
                   <>
+                    <Route path="/" element={<Dashboard />} />
                     <Route path="/recaudador" element={<Recaudador />} />
                     <Route path="/cuentas-cbu" element={<CuentasCBU />} />
                   </>

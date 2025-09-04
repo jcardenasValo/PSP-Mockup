@@ -12,19 +12,30 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import MenuItem from '@mui/material/MenuItem';
 
 export default function CrudTable({ columns, initialRows, formFields, title, fechaModificacionAuto, fechaUltimoMovimientoAuto }) {
-  // Persistencia con localStorage
-  const storageKey = `crudtable_${title}`;
-  const getStoredRows = () => {
-    try {
-      const data = localStorage.getItem(storageKey);
-      return data ? JSON.parse(data) : initialRows;
-    } catch {
-      return initialRows;
-    }
+  // Persistencia con backend
+  const entityMap = {
+    'Recaudador': 'recaudadoras',
+    'Cuentas CBU': 'cuentas-cbu',
+    'Clientes': 'clientes',
+    'Cajas/Sucursales Clientes': 'cajas-clientes',
+    'Cuenta CVU': 'cuenta-cvu',
+    'Deudas': 'deudas',
+    'Consulta Movimientos': 'movimientos',
+    'Roles': 'roles',
   };
-  const [rows, setRows] = useState(getStoredRows());
+  const endpoint = entityMap[title];
+  const [rows, setRows] = useState([]);
+
+  React.useEffect(() => {
+    if (!endpoint) return;
+    fetch(`http://localhost:4000/${endpoint}`)
+      .then(res => res.json())
+      .then(data => setRows(data));
+  }, [endpoint]);
+
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({});
   const [editId, setEditId] = useState(null);
@@ -52,26 +63,59 @@ export default function CrudTable({ columns, initialRows, formFields, title, fec
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const persistRows = (newRows) => {
+  const persistRows = async (newRows) => {
     setRows(newRows);
-    localStorage.setItem(storageKey, JSON.stringify(newRows));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     let newForm = { ...form };
-    // Modificación: actualizar fechaModificacion/fechaUltimoMovimiento si corresponde
     if (fechaModificacionAuto) newForm.fechaModificacion = dayjs().format('YYYY-MM-DD');
     if (fechaUltimoMovimientoAuto) newForm.fechaUltimoMovimiento = dayjs().format('YYYY-MM-DD');
-    if (editId) {
-      persistRows(rows.map(r => r.id === editId ? { ...newForm, id: editId } : r));
+    // Convertir saldo a número si existe
+    if ('saldo' in newForm) {
+      newForm.saldo = Number(newForm.saldo);
+    }
+    if (endpoint) {
+      if (editId) {
+        // Modificación (PUT)
+        await fetch(`http://localhost:4000/${endpoint}/${editId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newForm)
+        });
+      } else {
+        // Alta (POST)
+        await fetch(`http://localhost:4000/${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newForm)
+        });
+      }
+      // Refrescar datos
+      const res = await fetch(`http://localhost:4000/${endpoint}`);
+      const data = await res.json();
+      setRows(data);
     } else {
-      persistRows([...rows, { ...newForm, id: Date.now() }]);
+      // Fallback localStorage
+      if (editId) {
+        persistRows(rows.map(r => r.id === editId ? { ...newForm, id: editId } : r));
+      } else {
+        persistRows([...rows, { ...newForm, id: Date.now() }]);
+      }
     }
     handleClose();
   };
 
-  const handleDelete = (id) => {
-    persistRows(rows.filter(r => r.id !== id));
+  const handleDelete = async (id) => {
+    if (endpoint) {
+      await fetch(`http://localhost:4000/${endpoint}/${id}`, { method: 'DELETE' });
+      // Refrescar datos
+      const res = await fetch(`http://localhost:4000/${endpoint}`);
+      const data = await res.json();
+      setRows(data);
+    } else {
+      persistRows(rows.filter(r => r.id !== id));
+    }
   };
 
   const handleFilterChange = (e) => {
@@ -135,6 +179,23 @@ export default function CrudTable({ columns, initialRows, formFields, title, fec
                       renderInput={(params) => <TextField {...params} fullWidth />}
                     />
                   </LocalizationProvider>
+                );
+              }
+              if (field.type === 'select') {
+                return (
+                  <TextField
+                    key={field.name}
+                    select
+                    label={field.label}
+                    name={field.name}
+                    value={form[field.name] || ''}
+                    onChange={handleChange}
+                    fullWidth
+                  >
+                    {field.options.map(opt => (
+                      <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                    ))}
+                  </TextField>
                 );
               }
               return (

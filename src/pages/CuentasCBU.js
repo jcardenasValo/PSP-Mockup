@@ -15,14 +15,29 @@ const columns = [
   },
 ];
 
-const formFields = [
-  { name: 'codigoMoneda', label: 'Código Moneda' },
-  { name: 'monedaDescripcion', label: 'Moneda Descripción' },
-  { name: 'numeroCuentaCBU', label: 'Número Cuenta CBU' },
-  { name: 'saldo', label: 'Saldo' },
-];
+import { useEffect, useState } from 'react';
 
 export default function CuentasCBU() {
+  const [recaudadoras, setRecaudadoras] = useState([]);
+  useEffect(() => {
+    fetch('http://localhost:4000/recaudadoras')
+      .then(res => res.json())
+      .then(data => setRecaudadoras(data));
+  }, []);
+
+  const formFields = [
+    { name: 'codigoMoneda', label: 'Código Moneda' },
+    { name: 'monedaDescripcion', label: 'Moneda Descripción' },
+    { name: 'numeroCuentaCBU', label: 'Número Cuenta CBU' },
+    { name: 'saldo', label: 'Saldo' },
+    {
+      name: 'recaudadoraId',
+      label: 'Recaudadora',
+      type: 'select',
+      options: recaudadoras.map(r => ({ value: r.id, label: r.razonSocial }))
+    }
+  ];
+
   return (
     <CrudTable
       columns={columns}
@@ -33,3 +48,5 @@ export default function CuentasCBU() {
     />
   );
 }
+
+// ...eliminado: declaración duplicada...
